@@ -12,6 +12,7 @@ class RasStates(StatesGroup):
     AddNewCourseStates = State()
     AddNewDescription = State()
     AddNewSourseState = State()
+    AddRewievState = State()
     waiting_for_instructions = State()
 
 

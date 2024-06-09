@@ -179,48 +179,53 @@ async def process_edit_answer_callback(callback_query: types.CallbackQuery, stat
     await bot.send_message(callback_query.from_user.id, 'Введите название курса:')
     await state.set_state(RasStates.AddNewCourseStates)
 
-@router.message(RasStates.AddNewCourseStates)
-async def kyrs(message: types.Message, state: FSMContext):
-    name_kyrs = message.text
-    await state.update_data(name_kyrs=name_kyrs)
-    await bot.send_message(message.from_user.id, 'Введите описание курса:')
-    await state.set_state(RasStates.AddNewDescription)
+    @router.message(RasStates.AddNewCourseStates)
+    async def kyrs(message: types.Message, state: FSMContext):
+        name_kyrs = message.text
+        await state.update_data(name_kyrs=name_kyrs)
+        print(name_kyrs)
 
-@router.message(RasStates.AddNewDescription)
-async def description(message: types.Message, state: FSMContext):
-    description = message.text
-    await state.update_data(description=description)
-    await bot.send_message(message.from_user.id, 'Введите ссылку курса:')
-    await state.set_state(RasStates.AddNewSourseState)
+        await bot.send_message(message.from_user.id, 'Введите описание курса:')
+        await state.set_state(RasStates.AddNewDescription)
+    @router.message(RasStates.AddNewDescription)
+    async def description(message: types.Message, state: FSMContext):
+        description = message.text
+        await state.update_data(description=description)
+        print(description)
+        await bot.send_message(message.from_user.id, 'Введите ссылку курса:')
+        await state.set_state(RasStates.AddNewSourseState)
 
-@router.message(RasStates.AddNewSourseState)
-async def url(message: types.Message,state: FSMContext):
-    sourse = message.text
-    await state.update_data(sourse=sourse)
-    await bot.send_message(message.from_user.id, 'Введите стоимость курса:')
-    await state.set_state(RasStates.AddCostState)
 
-@router.message(RasStates.AddNewCostState)
-async def cost(message: types.Message, state: FSMContext):
-    cost = message.text
-    await state.update_data(cost=cost)
+    @router.message(RasStates.AddNewSourseState)
+    async def url(message: types.Message,state: FSMContext):
+        sourse = message.text
+        await state.update_data(sourse=sourse)
+        print(sourse)
 
-    data = await state.get_data()
-    name_kyrs = data.get('name_kyrs')
-    description = data.get('description')
-    sourse = data.get('sourse')
-    cost = data.get('cost')
-    ans_id = data.get('ans_id')
+        await bot.send_message(message.from_user.id, 'Введите стоимость курса:')
+        await state.set_state(RasStates.AddNewCostState)
 
-    query = """UPDATE Courses
-               SET Name = ?, Description = ?, Web = ?, Cost = ?
-               WHERE ID = ?;"""
-    try:
-        cur.execute(query, (name_kyrs, description, sourse, cost, ans_id))
-        conn.commit()
-        await state.clear()
-        await bot.send_message(message.from_user.id, 'Успешно обновлено')
-    except Exception as e:
-        await bot.send_message(message.from_user.id, f'Ошибка: {e}')
-        await state.clear()
+    @router.message(RasStates.AddNewCostState)
+    async def cost(message: types.Message, state: FSMContext):
+        cost = message.text
+        await state.update_data(cost=cost)
+
+        data = await state.get_data()
+        name_kyrs = data.get('name_kyrs')
+        description = data.get('description')
+        sourse = data.get('sourse')
+        cost = data.get('cost')
+        ans_id = data.get('ans_id')
+        print(name_kyrs, description, sourse, cost, ans_id)
+        query = """UPDATE Courses
+                   SET Name = ?, Description = ?, Web = ?, Cost = ?
+                   WHERE ID = ?;"""
+        try:
+            cur.execute(query, (name_kyrs, description, sourse, cost, ans_id))
+            conn.commit()
+            await state.clear()
+            await bot.send_message(message.from_user.id, 'Успешно обновлено')
+        except Exception as e:
+            await bot.send_message(message.from_user.id, f'Ошибка: {e}')
+            await state.clear()
 

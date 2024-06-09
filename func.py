@@ -1,15 +1,8 @@
 from conf import cur,conn
 
 
-def get_users_instructions_count(cur):
-    cur.execute("""
-        SELECT  Users.user_id, COUNT(Instructions.ID) AS num_instructions
-        FROM Users
-        LEFT JOIN Instructions ON Users.user_id = Instructions.author_id
-        GROUP BY Users.user_id
-        ORDER BY num_instructions DESC;
-    """)
-    return cur.fetchall()
+
+
 
 
 def add_user(Email, Phone, Username,User_id, cur, con):

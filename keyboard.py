@@ -50,25 +50,14 @@ menu_keyboard = types.InlineKeyboardMarkup(inline_keyboard=menu_kb,
                                            )
 
 
-# def get_profile_kb(user_id):
+def get_profile_kb(user_id):
 #     # клава в профиль
-#     cur.execute(f"SELECT notifications from Users WHERE user_id = {user_id}")
-#     res = cur.fetchone()[0]
+#     #
+      profile_kb = InlineKeyboardBuilder()
 #
-#     notif = ''
-#     if res == 0:
-#         notif = '🔔 Включить'
-#     elif res == 1:
-#         notif = '🔕 Выключить'
+      profile_kb.add(types.InlineKeyboardButton(text=f"📫 Мои Курсы", callback_data=f"my_subscriptions_{user_id}"))
 #
-#     profile_kb = InlineKeyboardBuilder()
-#     profile_kb.add(types.InlineKeyboardButton(text="✏Редактировать", callback_data="edit_ins_ans"))
-#     profile_kb.add(types.InlineKeyboardButton(text="📫 Мои подписки", callback_data="my_subscriptions"))
-#     profile_kb.add(types.InlineKeyboardButton(text=f"{notif} уведомления", callback_data="ofonnotifs"))
-#     profile_kb.row(types.InlineKeyboardButton(text='🗑 Удалить аккаунт♯', callback_data='DeleteProfile'))
-#     profile_kb.row(types.InlineKeyboardButton(text='🚫 Сделать дроп', callback_data='DeleteDB'))
-#
-#     return profile_kb.as_markup()
+      return profile_kb.as_markup()
 
 
 
