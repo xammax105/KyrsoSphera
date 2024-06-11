@@ -63,7 +63,6 @@ async def admin(message: types.Message, state: FSMContext):
 
 
 @router.callback_query(F.data == 'profile')
-@router.callback_query(F.data == 'profile')
 async def profile_command(message: types.Message):
     # Получение количества ответов пользователя
     query = """SELECT COUNT(cp.UserId)
