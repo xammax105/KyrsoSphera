@@ -3,7 +3,7 @@ import json
 from aiogram import Bot, Router, types, F
 from aiogram.enums import ContentType
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardMarkup, WebAppInfo, PreCheckoutQuery
+from aiogram.types import InlineKeyboardMarkup, WebAppInfo, PreCheckoutQuery, LabeledPrice
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import func
@@ -192,15 +192,14 @@ async def process_reply(callback_query: types.CallbackQuery, state: FSMContext):
     await bot.send_message(callback_query.from_user.id, f'Для подтвержедния нажмите кнопку снизу\n'
                                                         f'<b>Данную цифру используйте в форме регистрации на курс</b> <code>{cont_1}</code>:',parse_mode='html', reply_markup=conf)
 
+
 @router.message(F.web_app_data)
 async def web_app_data_handler(message: types.Message):
     data = message.web_app_data.data
     await message.answer(f"Получены данные из Web App: {data}", reply_markup=kb.kb_keyboard)
     print(data)
 
-
     data = json.loads(data)
-
 
     cur.execute(f"Select Name, Cost From Courses Where Id = {data['number']}")
     row = cur.fetchone()
@@ -208,16 +207,18 @@ async def web_app_data_handler(message: types.Message):
 
     if row:
         name, cost = row
-        PRICE = types.LabeledPrice(label=name, amount=int(cost) * 100)  # Создание объекта LabeledPrice
+        PRICE = LabeledPrice(label=name, amount=int(cost) * 100)  # Создание объекта LabeledPrice
         print(PRICE)  # Печать созданного объекта
     else:
         print("Курс с указанным Id не найден.")
+        await message.answer("Курс с указанным Id не найден.")
+        return
 
     await bot.send_invoice(message.chat.id,
                            title=f"Оплата курса",
                            description=f"Оплата стоимости {name}",
                            provider_token=Pay_token,
-                           currency="rub",
+                           currency="RUB",
                            photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
                            photo_width=416,
                            photo_height=234,
@@ -230,19 +231,15 @@ async def web_app_data_handler(message: types.Message):
                            payload='one more kyrs'
                            )
 
-    @router.pre_checkout_query()
-    async def pre_checkout_query(pre_checkout_query: PreCheckoutQuery, bot: Bot):
-        await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
 
-    @router.message(F.content_types == ContentType.SUCCESSFUL_PAYMENT)
-    async def handle_successful_payment(message: types.Message):
-        successful_payment = message.successful_payment
-
-        await message.answer(f"Спасибо за оплату! 💸\n"
-                             f"Сумма: {successful_payment.total_amount} {successful_payment.currency}"
-                            )
+@router.pre_checkout_query()
+async def pre_checkout_query(pre_checkout_query: PreCheckoutQuery, bot: Bot):
+    await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
 
 
+@router.message(F.successful_payment)
+async def successful_payment(message: types.Message):
+    await message.answer('Оплата прошла успешно! Спасибо за покупку.')
 
 
 
