@@ -19,11 +19,12 @@ async def main():
 
 
 
+
     # запускаем поллинг
     loop = asyncio.get_event_loop()
 
     await bot.delete_webhook(drop_pending_updates=True)  # пропуск обновлений
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 
 bot = Bot(token=TOKEN)
@@ -50,3 +51,4 @@ async def start_command(message: types.Message, state: FSMContext):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)  # логирование
     asyncio.run(main())
+

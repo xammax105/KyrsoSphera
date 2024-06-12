@@ -1,8 +1,12 @@
+import json
 
 from aiogram import Bot, Router, types, F
+from aiogram.enums import ContentType
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup, WebAppInfo, PreCheckoutQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+import func
 import func as f
 import kyrs_hand
 import keyboard as kb
@@ -10,7 +14,7 @@ from states import *
 import sqlite3
 import os
 import logging
-from conf import TOKEN, admin_token
+from conf import TOKEN, admin_token,Pay_token
 # import functions as f
 from conf import cur,conn
 # подключение к базе данных
@@ -174,3 +178,71 @@ async def process_add_rewiev(callback_query: types.CallbackQuery, state: FSMCont
         conn.commit()
         await bot.send_message(callback_query.from_user.id,"Отзыв успешно добавлен")
         state.clear()
+
+@router.callback_query(lambda c: c.data.startswith('reply_'))
+async def process_reply(callback_query: types.CallbackQuery, state: FSMContext):
+    cont_1 = callback_query.data.split('_')[1]
+    web_app = WebAppInfo(url="https://xammax105.github.io/")
+
+    buttons = [
+        [types.KeyboardButton(text="Подтвердить",web_app=web_app)]
+    ]
+    conf = types.ReplyKeyboardMarkup(keyboard=buttons,
+                                         resize_keyboard=True)
+    await bot.send_message(callback_query.from_user.id, f'Для подтвержедния нажмите кнопку снизу\n'
+                                                        f'<b>Данную цифру используйте в форме регистрации на курс</b> <code>{cont_1}</code>:',parse_mode='html', reply_markup=conf)
+
+@router.message(F.web_app_data)
+async def web_app_data_handler(message: types.Message):
+    data = message.web_app_data.data
+    await message.answer(f"Получены данные из Web App: {data}", reply_markup=kb.kb_keyboard)
+    print(data)
+
+
+    data = json.loads(data)
+
+
+    cur.execute(f"Select Name, Cost From Courses Where Id = {data['number']}")
+    row = cur.fetchone()
+    func.send_email_notification(data)
+
+    if row:
+        name, cost = row
+        PRICE = types.LabeledPrice(label=name, amount=int(cost) * 100)  # Создание объекта LabeledPrice
+        print(PRICE)  # Печать созданного объекта
+    else:
+        print("Курс с указанным Id не найден.")
+
+    await bot.send_invoice(message.chat.id,
+                           title=f"Оплата курса",
+                           description=f"Оплата стоимости {name}",
+                           provider_token=Pay_token,
+                           currency="rub",
+                           photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
+                           photo_width=416,
+                           photo_height=234,
+                           photo_size=416,
+                           is_flexible=False,
+                           need_email=True,
+                           need_phone_number=True,
+                           prices=[PRICE],
+                           start_parameter="start_kyrs",
+                           payload='one more kyrs'
+                           )
+
+    @router.pre_checkout_query()
+    async def pre_checkout_query(pre_checkout_query: PreCheckoutQuery, bot: Bot):
+        await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+    @router.message(F.content_types == ContentType.SUCCESSFUL_PAYMENT)
+    async def handle_successful_payment(message: types.Message):
+        successful_payment = message.successful_payment
+
+        await message.answer(f"Спасибо за оплату! 💸\n"
+                             f"Сумма: {successful_payment.total_amount} {successful_payment.currency}"
+                            )
+
+
+
+
+
