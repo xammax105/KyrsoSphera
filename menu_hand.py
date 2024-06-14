@@ -146,7 +146,7 @@ async def Top(callback_query: types.CallbackQuery):
         ) cp ON c.ID = cp.CourseId
     """)
     # создаем клавиатуру с информацией о курсе
-    course_keyboard = InlineKeyboardBuilder()
+
     for course_info in top_course_info:
         id,name, description,wed, price, user_count = course_info
 
@@ -191,6 +191,7 @@ async def process_reply(callback_query: types.CallbackQuery, state: FSMContext):
                                          resize_keyboard=True)
     await bot.send_message(callback_query.from_user.id, f'Для подтвержедния нажмите кнопку снизу\n'
                                                         f'<b>Данную цифру используйте в форме регистрации на курс</b> <code>{cont_1}</code>:',parse_mode='html', reply_markup=conf)
+message_data = {}
 
 
 @router.message(F.web_app_data)
@@ -204,7 +205,7 @@ async def web_app_data_handler(message: types.Message):
     cur.execute(f"Select Name, Cost From Courses Where Id = {data['number']}")
     row = cur.fetchone()
     func.send_email_notification(data)
-
+    message_data[message.chat.id] = data
     if row:
         name, cost = row
         PRICE = LabeledPrice(label=name, amount=int(cost) * 100)  # Создание объекта LabeledPrice
@@ -231,7 +232,6 @@ async def web_app_data_handler(message: types.Message):
                            payload='one more kyrs'
                            )
 
-
 @router.pre_checkout_query()
 async def pre_checkout_query(pre_checkout_query: PreCheckoutQuery, bot: Bot):
     await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
@@ -239,7 +239,38 @@ async def pre_checkout_query(pre_checkout_query: PreCheckoutQuery, bot: Bot):
 
 @router.message(F.successful_payment)
 async def successful_payment(message: types.Message):
-    await message.answer('Оплата прошла успешно! Спасибо за покупку.')
+    #достал из списка по айдишнику
+    data = message_data.get(message.chat.id)
+
+    with conn.cursor() as cur:
+        # Fetch the course name
+        cur.execute(f"SELECT Name FROM Courses WHERE Id = ?", (data['number'],))
+        row = cur.fetchone()
+        if row:
+            course_name = row[0]
+            await message.answer(
+                f'Оплата прошла курса {course_name} успешно! Спасибо за покупку. \nВ ближайщее время с вами свжется образовательная площадка!')
+        else:
+            await message.answer('Курс не найден.')
+            return
+
+    with conn.cursor() as cur:
+        # Fetch the user ID
+        cur.execute(f"SELECT ID FROM Users WHERE User_id = ?", (message.from_user.id,))
+        row = cur.fetchone()
+        if row:
+            id_user = row[0]
+            print(id_user, "UserIDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+        else:
+            await message.answer('Пользователь не найден.')
+            return
+
+    with conn.cursor() as cur:
+        # Insert into CourseParticipants
+        cur.execute("INSERT INTO CourseParticipants (UserID, CourseID) VALUES (?, ?)", (id_user, data['number']))
+        conn.commit()
+
+    print(message_data)
 
 
 
