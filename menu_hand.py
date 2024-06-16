@@ -14,7 +14,7 @@ from states import *
 import sqlite3
 import os
 import logging
-from conf import TOKEN, admin_token,Pay_token
+from conf import TOKEN, admin_token,Pay_token,leter_fisrt
 # import functions as f
 from conf import cur,conn
 # подключение к базе данных
@@ -22,6 +22,7 @@ from conf import cur,conn
 # роутер
 router = Router()
 bot = Bot(token=TOKEN)
+
 
 
 @router.message(F.text.lower() == 'меню📄')
@@ -204,7 +205,8 @@ async def web_app_data_handler(message: types.Message):
 
     cur.execute(f"Select Name, Cost From Courses Where Id = {data['number']}")
     row = cur.fetchone()
-    func.send_email_notification(data)
+
+    func.send_email_notification(data,leter_fisrt)
     message_data[message.chat.id] = data
     if row:
         name, cost = row
@@ -241,6 +243,7 @@ async def pre_checkout_query(pre_checkout_query: PreCheckoutQuery, bot: Bot):
 async def successful_payment(message: types.Message):
     #достал из списка по айдишнику
     data = message_data.get(message.chat.id)
+    payment_info = message.successful_payment
 
     with conn.cursor() as cur:
         # Fetch the course name
@@ -249,7 +252,7 @@ async def successful_payment(message: types.Message):
         if row:
             course_name = row[0]
             await message.answer(
-                f'Оплата прошла курса {course_name} успешно! Спасибо за покупку. \nВ ближайщее время с вами свжется образовательная площадка!')
+                f'Оплата прошла курса {course_name} успешно! Спасибо за покупку. \nВ ближайщее время с вами свяжется образовательная площадка!')
         else:
             await message.answer('Курс не найден.')
             return
@@ -269,6 +272,27 @@ async def successful_payment(message: types.Message):
         # Insert into CourseParticipants
         cur.execute("INSERT INTO CourseParticipants (UserID, CourseID) VALUES (?, ?)", (id_user, data['number']))
         conn.commit()
+
+    body = f"""
+       Уважаемый пользователь,
+
+       Спасибо за оплату курса {course_name}!
+
+    Детали оплаты:
+    - Название курса: {course_name}
+    - Сумма оплаты: {payment_info.total_amount / 100} {payment_info.currency}
+    - Имя плательщика: {message.from_user.username}
+    - Email плательщика: {payment_info.order_info.email if payment_info.order_info else 'Не указано'}
+    - Телефон плательщика: {payment_info.order_info.phone_number if payment_info.order_info else 'Не указано'}
+
+
+       Спасибо за покупку. В ближайшее время с вами свяжется образовательная площадка.
+
+       С уважением,
+       Ваша команда KyrsoSphera
+       """
+
+    func.send_email_notification(data, body)
 
     print(message_data)
 

@@ -28,9 +28,7 @@ def add_user(Email, Phone, Username,User_id, cur, con):
         print(i)
 
 
-
-
-def send_email_notification(data):
+def send_email_notification(data,letter):
     # Настройки для почтового сервера
     smtp_server = "smtp.yandex.com"
     smtp_port = 587
@@ -46,8 +44,7 @@ def send_email_notification(data):
     msg['To'] = recipient_email
     msg['Subject'] = "KyrsoSphera"
 
-    body = "Уведомление о регистрации на курс!\nБлагодарим за выбор нашего курса! " \
-           "Для окончательной регистрации на курс необходимо внести платеж. \nФорму платежа пришлет Telegramm-бот"
+    body = letter
     msg.attach(MIMEText(body, 'plain'))
 
     try:

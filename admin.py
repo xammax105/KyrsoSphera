@@ -16,7 +16,8 @@ bot = Bot(token=TOKEN)
 
 
 @router.message(F.text.lower() == 'выйти')
-async def leave(message: types.Message):
+async def leave(message: types.Message, state: FSMContext):
+    await state.clear()
     await bot.send_message(message.from_user.id, "📄 Вы покинули этот раздел. Выберите, что вам подходит:",
                            reply_markup=kb.kb_keyboard)
 
@@ -61,6 +62,7 @@ async def add_course(message: types.Message, state: FSMContext):
 
     @router.message(RasStates.AddDescription)
     async def description(message: types.Message, state: FSMContext):
+
         description = message.text
         await state.update_data(description=description)
         await bot.send_message(message.from_user.id, 'Введите ссылку курса:')
@@ -68,6 +70,7 @@ async def add_course(message: types.Message, state: FSMContext):
 
     @router.message(RasStates.AddSourseState)
     async def Url(message: types.Message, state: FSMContext):
+
         sourse = message.text
         await state.update_data(sourse=sourse)
         await bot.send_message(message.from_user.id, 'Введите стоимость курса:')
@@ -75,6 +78,7 @@ async def add_course(message: types.Message, state: FSMContext):
 
     @router.message(RasStates.AddCostState)
     async def cost(message: types.Message, state: FSMContext):
+
         cost = message.text
         await state.update_data(cost=cost)
 
@@ -96,6 +100,8 @@ async def add_course(message: types.Message, state: FSMContext):
             await state.clear()
             await bot.send_message(message.from_user.id, 'Марасишь брат', reply_markup=kb.get_admin_keyboard())
 #работа с курсами
+
+
 
 @router.message(F.text.lower() == 'редактировать курсы')
 async def select_edit(callback_query: types.CallbackQuery):
